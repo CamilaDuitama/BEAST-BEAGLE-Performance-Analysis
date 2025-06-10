@@ -21,8 +21,13 @@ This directory contains scripts, data, and logs for evaluating the performance o
 
 - **beast_run.sh**: Dynamic SLURM script for running BEAST with a specified number of threads.
 - **partitioned_example.xml**: Dummy dataset by Sebastian.
-- **partitioned_example.xml.state**: State file associated with the dataset.
 
+# How to run the script
+
+Example for 2 threads:
+```bash
+sbatch --cpus-per-task=2 cpu_performance.sh 2
+```
 # Results
 
 ## Table of Job Metrics

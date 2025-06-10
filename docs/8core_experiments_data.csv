@@ -1,0 +1,8 @@
+dataset,data_type,ntax,nchar,partitions,unique_sites_per_partition_min,unique_sites_per_partition_max,time_steps,kernel,beast_threads,beagle_threads,cores,run_time_min,speedup,cost_cpu_min,unique_sites_avg
+Benchmark1,DNA,1441,987,1,593,593,10k,beagle_SSE,1,8,8,5.57,2.63,45.0,593.0
+Benchmark2,DNA,62,10869,1,5565,5565,10k,beagle_SSE,1,8,8,1.84,4.57,15.0,5565.0
+DS3,DNA,219,1956,1,1314,1314,10k,beagle_SSE,1,8,8,0.97,3.4,8.0,1314.0
+DS4,DNA,48,1577,2,237,276,100k,beagle_SSE,2,4,8,1.06,2.03,8.48,256.5
+DS5,AA,131,3095,4,122,752,10k,beagle_SSE,4,2,8,1.14,5.41,9.09,437.0
+DS6,DNA,348,6954,16,37,814,10k,beagle_SSE,8,1,8,20.37,6.93,162.93,425.5
+DS7,DNA,271,11440,27,26,245,10k,beagle_SSE,8,1,8,11.4,3.95,91.18,135.5

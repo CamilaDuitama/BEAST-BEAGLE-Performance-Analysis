@@ -36,6 +36,8 @@ job_id=${SLURM_JOB_ID:-unknown}
 # Define the combined log file path
 log_file="${output_dir}/beast_run_${threads}_${job_id}_${timestamp}.log"
 
+echo $threads
+
 # Run BEAST using BEAGLE with SSE and specified number of threads
 beast -beagle -threads $threads -beagle_SSE -beagle_CPU /pasteur/zeus/projets/p02/DEMI_clocks/cduitama/BEAST_performance/partitioned_example.xml > $log_file 2>&1
 
