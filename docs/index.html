@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>BEAST-BEAGLE Performance Analysis</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 40px;
+            background-color: #f5f5f5;
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; text-align: center; }
+        h2 { color: #555; margin-top: 30px; }
+        .plot-description {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .insight {
+            background-color: #e9ecef;
+            padding: 10px 15px;
+            border-left: 4px solid #007bff;
+            margin: 10px 0;
+        }
+        ul { line-height: 1.8; }
+        a { color: #007bff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>BEAST-BEAGLE Performance Analysis</h1>
+        
+        <div class="plot-description">
+            <h2>Performance Visualization</h2>
+            <p>This interactive plot shows the relationship between dataset complexity (unique sites per partition) 
+            and runtime for different core configurations. Marker size indicates the number of cores used.</p>
+            <ul>
+                <li>⭐ Star markers highlight the optimal 8-core configurations</li>
+                <li>Larger circles indicate more cores (1 to 32)</li>
+                <li>Each color represents a different dataset</li>
+                <li>Hover over points for detailed performance metrics</li>
+            </ul>
+        </div>
+
+        <h2>Interactive Plot</h2>
+        <p><a href="sites_vs_runtime_all_cores.html">📊 View Performance Analysis (All Core Configurations)</a></p>
+        
+        <div class="insight">
+            <strong>Key Insight:</strong> The 8-core configuration (gold stars) provides the best balance 
+            between performance and computational cost across all datasets.
+        </div>
+        
+        <h2>Data Download</h2>
+        <ul>
+            <li><a href="all_beagle_experiments_data.csv">📥 Download complete experiment data (CSV)</a></li>
+        </ul>
+        
+        <h2>Repository</h2>
+        <p>View the complete analysis and source code on <a href="https://github.com/CamilaDuitama/BEAST-BEAGLE-Performance-Analysis">GitHub</a></p>
+    </div>
+</body>
+</html>
