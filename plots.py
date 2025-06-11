@@ -40,68 +40,58 @@ kernel_symbols = {
 for partition_count in partition_counts:
     # Filter data for this partition count
     partition_data = df[df['partitions'] == partition_count]
-    
     if partition_data.empty:
         continue
-    
+
     fig = go.Figure()
-    
-    # Get all datasets with this partition count
-    datasets_in_plot = partition_data['dataset'].unique()
-    
-    # Add traces for each dataset and kernel combination
-    for dataset in datasets_in_plot:
-        for kernel in ['native', 'beagle_SSE']:
-            kernel_data = partition_data[(partition_data['dataset'] == dataset) & 
-                                       (partition_data['kernel'] == kernel)]
-            
-            if kernel_data.empty:
-                continue
-            
-            # Scale marker size based on cores
-            marker_sizes = 10 + (kernel_data['cores'] / 32 * 30)
-            
-            # Create configuration text
-            if kernel == 'native':
-                # Native kernel only uses BEAST threads
-                config_text = [f"{cores} cores ({bt}B)" for cores, bt in 
-                             zip(kernel_data['cores'], kernel_data['beast_threads'])]
-            else:
-                # beagle_SSE uses both BEAST and BEAGLE threads
-                config_text = [f"{cores} cores ({bt}B/{bg}T)" for cores, bt, bg in 
-                             zip(kernel_data['cores'], kernel_data['beast_threads'], kernel_data['beagle_threads'])]
-            
-            fig.add_trace(
-                go.Scatter(
-                    x=kernel_data['unique_sites_avg'],
-                    y=kernel_data['run_time_min'],
-                    mode='markers',
-                    name=f"{dataset} ({kernel})",
-                    marker=dict(
-                        size=marker_sizes,
-                        color=colors.get(dataset, 'gray'),
-                        symbol=kernel_symbols[kernel],
-                        line=dict(width=2, color='black' if kernel == 'native' else 'white'),
-                        opacity=0.8
-                    ),
-                    text=config_text,
-                    legendgroup=dataset,
-                    hovertemplate='<b>%{fullData.name}</b><br>' +
-                                  'Avg unique sites/partition: %{x:.0f}<br>' +
-                                  'Run time: %{y:.2f} min<br>' +
-                                  'Configuration: %{text}<br>' +
-                                  'Speedup: %{customdata[0]:.2f}x<br>' +
-                                  'Cost: %{customdata[1]:.1f} cpu-min<extra></extra>',
-                    customdata=kernel_data[['speedup', 'cost_cpu_min']].values
-                )
+
+    # Get all unique core counts for this partition count
+    core_counts = sorted(partition_data['cores'].unique())
+
+    for cores in core_counts:
+        core_data = partition_data[partition_data['cores'] == cores]
+        if core_data.empty:
+            continue
+
+        # Color by dataset, symbol by kernel
+        marker_colors = core_data['dataset'].map(colors).fillna('gray')
+        marker_symbols = core_data['kernel'].map(kernel_symbols)
+
+        # Compose hover text
+        hover_text = [
+            f"Dataset: {row['dataset']}<br>Kernel: {row['kernel']}<br>BEAST threads: {row['beast_threads']}"
+            + (f"<br>BEAGLE threads: {row['beagle_threads']}" if row['kernel'] == 'beagle_SSE' else "")
+            for _, row in core_data.iterrows()
+        ]
+
+        fig.add_trace(
+            go.Scatter(
+                x=core_data['unique_sites_avg'],
+                y=core_data['run_time_min'],
+                mode='markers',
+                name=f"{cores} cores",
+                marker=dict(
+                    size=16,
+                    color=marker_colors,
+                    symbol=marker_symbols,
+                    line=dict(width=2, color='black'),
+                    opacity=0.8
+                ),
+                text=hover_text,
+                customdata=core_data[['dataset', 'kernel', 'speedup', 'cost_cpu_min']].values,
+                hovertemplate='%{text}<br>' +
+                              'Avg unique sites/partition: %{x:.0f}<br>' +
+                              'Run time: %{y:.2f} min<br>' +
+                              'Speedup: %{customdata[2]:.2f}x<br>' +
+                              'Cost: %{customdata[3]:.1f} cpu-min<extra></extra>',
             )
-    
-    
+        )
+
     # Add legend explanation
     fig.add_annotation(
         xref="paper", yref="paper",
         x=0.02, y=0.98,
-        text="● = native<br>■ = beagle_SSE",
+        text="● = native<br>■ = beagle_SSE<br>Color = dataset",
         showarrow=False,
         font=dict(size=12),
         bgcolor="rgba(255,255,255,0.8)",
@@ -110,10 +100,10 @@ for partition_count in partition_counts:
         xanchor='left',
         yanchor='top'
     )
-    
+
     fig.update_layout(
         title={
-            'text': f'BEAST Performance Comparison: {partition_count} Partition{"s" if partition_count > 1 else ""}<br><sup>Native vs BEAGLE kernels | Marker size = cores</sup>',
+            'text': f'BEAST Performance: {partition_count} Partition{"s" if partition_count > 1 else ""}<br><sup>One trace per core count, all datasets</sup>',
             'x': 0.5,
             'xanchor': 'center',
             'font': {'size': 18}
@@ -145,7 +135,7 @@ for partition_count in partition_counts:
             borderwidth=1
         )
     )
-    
+
     # Save plot
     filename = f'{partition_count}_partition{"s" if partition_count > 1 else ""}_comparison'
     fig.write_html(f'docs/{filename}.html')
@@ -291,7 +281,6 @@ for partition_count in partition_counts:
             <div class="plot-card">
                 <h3>{partition_count} Partition{"s" if partition_count > 1 else ""}</h3>
                 <p>Datasets: {', '.join(datasets)}</p>
-                <p class="improvement">Avg improvement: {avg_improvement:.1f}%</p>
                 <a href="{partition_count}_partition{'s' if partition_count > 1 else ''}_comparison.html" class="plot-link">View Comparison →</a>
             </div>
 """
@@ -325,4 +314,3 @@ else:
     print("No comparison data available")
 
 print(f"\nTotal files created: {len(partition_counts) + 3}")
-print("View locally with: python -m http.server 8000 --directory docs")
