@@ -39,6 +39,11 @@ symbol_list = [
 thread_combos = sorted(set(zip(df['beast_threads'], df['beagle_threads'])))
 combo_to_symbol = {combo: symbol_list[i % len(symbol_list)] for i, combo in enumerate(thread_combos)}
 
+# Reverse mapping for legend
+symbol_to_combo = {}
+for combo, symbol in combo_to_symbol.items():
+    symbol_to_combo.setdefault(symbol, []).append(combo)
+
 # Create one plot for each partition count
 for partition_count in partition_counts:
     partition_data = df[df['partitions'] == partition_count]
@@ -47,42 +52,36 @@ for partition_count in partition_counts:
 
     fig = go.Figure()
 
-    # Get all unique core counts for this partition count
-    core_counts = sorted(partition_data['cores'].unique())
-
-    for cores in core_counts:
-        core_data = partition_data[partition_data['cores'] == cores]
-        if core_data.empty:
+    # Each trace is a (beast_threads, beagle_threads) combo (i.e., a marker shape)
+    for combo, symbol in combo_to_symbol.items():
+        combo_data = partition_data[
+            (partition_data['beast_threads'] == combo[0]) &
+            (partition_data['beagle_threads'] == combo[1])
+        ]
+        if combo_data.empty:
             continue
 
-        # Color by dataset, symbol by (beast_threads, beagle_threads)
-        marker_colors = core_data['dataset'].map(colors).fillna('gray')
-        marker_symbols = [
-            combo_to_symbol[(row['beast_threads'], row['beagle_threads'])]
-            for _, row in core_data.iterrows()
-        ]
-
-        # Compose hover text
+        marker_colors = combo_data['dataset'].map(colors).fillna('gray')
         hover_text = [
             f"Dataset: {row['dataset']}<br>Kernel: {row['kernel']}<br>BEAST threads: {row['beast_threads']}<br>BEAGLE threads: {row['beagle_threads']}"
-            for _, row in core_data.iterrows()
+            for _, row in combo_data.iterrows()
         ]
 
         fig.add_trace(
             go.Scatter(
-                x=core_data['unique_sites_avg'],
-                y=core_data['run_time_min'],
+                x=combo_data['unique_sites_avg'],
+                y=combo_data['run_time_min'],
                 mode='markers',
-                name=f"{cores} cores",
+                name=f"{combo[0]}B/{combo[1]}T",
                 marker=dict(
                     size=16,
                     color=marker_colors,
-                    symbol=marker_symbols,
+                    symbol=symbol,
                     line=dict(width=2, color='black'),
                     opacity=0.8
                 ),
                 text=hover_text,
-                customdata=core_data[['dataset', 'kernel', 'speedup', 'cost_cpu_min']].values,
+                customdata=combo_data[['dataset', 'kernel', 'speedup', 'cost_cpu_min']].values,
                 hovertemplate='%{text}<br>' +
                               'Avg unique sites/partition: %{x:.0f}<br>' +
                               'Run time: %{y:.2f} min<br>' +
@@ -91,27 +90,28 @@ for partition_count in partition_counts:
             )
         )
 
-    # Build a legend for thread combos
-    legend_lines = []
-    for combo, symbol in combo_to_symbol.items():
-        beast, beagle = combo
-        # Unicode for some plotly symbols (not all have a unicode, so just show the name)
-        symbol_unicode = {
-            'circle': '●', 'square': '■', 'diamond': '◆', 'cross': '✚', 'x': '✖',
-            'triangle-up': '▲', 'triangle-down': '▼', 'triangle-left': '◀', 'triangle-right': '▶',
-            'star': '★', 'hexagram': '✡', 'bowtie': '⧓'
-        }
-        symbol_disp = symbol_unicode.get(symbol, symbol)
-        legend_lines.append(f"{symbol_disp} = {beast}B/{beagle}T")
-    legend_text = "<br>".join(legend_lines)
+    # Build a legend for marker shapes (right-hand side, not over plot)
+    legend_html = "<b>Marker shape = BEAST/BEAGLE threads</b><br>"
+    symbol_unicode = {
+        'circle': '●', 'square': '■', 'diamond': '◆', 'cross': '✚', 'x': '✖',
+        'triangle-up': '▲', 'triangle-down': '▼', 'triangle-left': '◀', 'triangle-right': '▶',
+        'star': '★', 'hexagram': '✡', 'bowtie': '⧓'
+    }
+    for symbol in symbol_list:
+        combos = symbol_to_combo.get(symbol, [])
+        for combo in combos:
+            beast, beagle = combo
+            symbol_disp = symbol_unicode.get(symbol, symbol)
+            legend_html += f"{symbol_disp} = {beast}B/{beagle}T<br>"
 
+    # Add a right-hand annotation for the marker shape legend
     fig.add_annotation(
         xref="paper", yref="paper",
-        x=0.02, y=0.98,
-        text=f"<b>Marker shape = BEAST/BEAGLE threads</b><br>{legend_text}<br>Color = dataset",
+        x=1.13, y=1,
+        text=legend_html + "<br>Color = dataset",
         showarrow=False,
         font=dict(size=12),
-        bgcolor="rgba(255,255,255,0.8)",
+        bgcolor="rgba(255,255,255,0.95)",
         bordercolor="black",
         borderwidth=1,
         xanchor='left',
@@ -120,7 +120,7 @@ for partition_count in partition_counts:
 
     fig.update_layout(
         title={
-            'text': f'BEAST Performance: {partition_count} Partition{"s" if partition_count > 1 else ""}<br><sup>One trace per core count, all datasets</sup>',
+            'text': f'BEAST Performance: {partition_count} Partition{"s" if partition_count > 1 else ""}<br><sup>One trace per BEAST/BEAGLE thread combo, all datasets</sup>',
             'x': 0.5,
             'xanchor': 'center',
             'font': {'size': 18}
@@ -137,19 +137,20 @@ for partition_count in partition_counts:
             gridcolor='lightgray',
             showgrid=True
         ),
-        width=900,
+        width=1000,
         height=700,
         plot_bgcolor='white',
         paper_bgcolor='white',
         showlegend=True,
         legend=dict(
-            x=1.02,
+            x=1.01,
             y=0.5,
             xanchor='left',
             yanchor='middle',
             bgcolor='rgba(255,255,255,0.9)',
             bordercolor='black',
-            borderwidth=1
+            borderwidth=1,
+            font=dict(size=12)
         )
     )
 
@@ -325,3 +326,4 @@ else:
     print("No comparison data available")
 
 print(f"\nTotal files created: {len(partition_counts) + 3}")
+
