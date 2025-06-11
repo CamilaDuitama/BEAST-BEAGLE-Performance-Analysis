@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>BEAST-BEAGLE Performance Analysis</title>
+    <title>BEAST Performance: Native vs BEAGLE</title>
     <style>
         body { 
             font-family: Arial, sans-serif; 
@@ -11,61 +11,134 @@
         .container { 
             max-width: 1200px; 
             margin: 0 auto;
+        }
+        h1 { 
+            color: #333; 
+            text-align: center;
             background-color: white;
-            padding: 30px;
+            padding: 20px;
             border-radius: 10px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-        h1 { color: #333; text-align: center; }
-        h2 { color: #555; margin-top: 30px; }
-        .plot-description {
-            background-color: #f8f9fa;
-            padding: 15px;
-            border-radius: 5px;
+        .comparison-note {
+            background-color: #e3f2fd;
+            padding: 20px;
+            border-radius: 10px;
             margin: 20px 0;
+            border-left: 5px solid #2196f3;
         }
-        .insight {
-            background-color: #e9ecef;
-            padding: 10px 15px;
-            border-left: 4px solid #007bff;
+        .plot-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .plot-card {
+            background-color: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: transform 0.2s;
+        }
+        .plot-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+        }
+        .plot-card h3 {
+            color: #007bff;
+            margin-bottom: 15px;
+        }
+        .plot-link {
+            display: inline-block;
+            padding: 10px 25px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 15px;
+            transition: background-color 0.3s;
+        }
+        .plot-link:hover {
+            background-color: #0056b3;
+        }
+        .improvement {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .legend-box {
+            display: inline-block;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
             margin: 10px 0;
         }
-        ul { line-height: 1.8; }
-        a { color: #007bff; text-decoration: none; }
-        a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>BEAST-BEAGLE Performance Analysis</h1>
+        <h1>BEAST Performance Analysis: Native vs BEAGLE Kernels</h1>
         
-        <div class="plot-description">
-            <h2>Performance Visualization</h2>
-            <p>This interactive plot shows the relationship between dataset complexity (unique sites per partition) 
-            and runtime for different core configurations. Marker size indicates the number of cores used.</p>
+        <div class="comparison-note">
+            <h3>Kernel Comparison</h3>
+            <div class="legend-box">
+                <strong>Marker shapes:</strong> ● Circle = Native kernel | ■ Square = BEAGLE SSE kernel
+            </div>
+            <p><strong>Key findings:</strong></p>
             <ul>
-                <li>⭐ Star markers highlight the optimal 8-core configurations</li>
-                <li>Larger circles indicate more cores (1 to 32)</li>
-                <li>Each color represents a different dataset</li>
-                <li>Hover over points for detailed performance metrics</li>
+                <li>BEAGLE SSE consistently outperforms native kernel, especially with proper thread configuration</li>
+                <li>Native kernel can only use BEAST threads (partition-level parallelization)</li>
+                <li>BEAGLE SSE can use both BEAST threads AND BEAGLE threads for better performance</li>
             </ul>
         </div>
-
-        <h2>Interactive Plot</h2>
-        <p><a href="sites_vs_runtime_all_cores.html">📊 View Performance Analysis (All Core Configurations)</a></p>
         
-        <div class="insight">
-            <strong>Key Insight:</strong> The 8-core configuration (gold stars) provides the best balance 
-            between performance and computational cost across all datasets.
+        <div class="plot-grid">
+
+            <div class="plot-card">
+                <h3>1 Partition</h3>
+                <p>Datasets: Benchmark1, Benchmark2, DS3</p>
+                <p class="improvement">Avg improvement: 71.4%</p>
+                <a href="1_partition_comparison.html" class="plot-link">View Comparison →</a>
+            </div>
+
+            <div class="plot-card">
+                <h3>2 Partitions</h3>
+                <p>Datasets: DS4</p>
+                <p class="improvement">Avg improvement: 47.2%</p>
+                <a href="2_partitions_comparison.html" class="plot-link">View Comparison →</a>
+            </div>
+
+            <div class="plot-card">
+                <h3>4 Partitions</h3>
+                <p>Datasets: DS5</p>
+                <p class="improvement">Avg improvement: 75.5%</p>
+                <a href="4_partitions_comparison.html" class="plot-link">View Comparison →</a>
+            </div>
+
+            <div class="plot-card">
+                <h3>16 Partitions</h3>
+                <p>Datasets: DS6</p>
+                <p class="improvement">Avg improvement: 55.7%</p>
+                <a href="16_partitions_comparison.html" class="plot-link">View Comparison →</a>
+            </div>
+
+            <div class="plot-card">
+                <h3>27 Partitions</h3>
+                <p>Datasets: DS7</p>
+                <p class="improvement">Avg improvement: 9.3%</p>
+                <a href="27_partitions_comparison.html" class="plot-link">View Comparison →</a>
+            </div>
+
         </div>
         
-        <h2>Data Download</h2>
-        <ul>
-            <li><a href="all_beagle_experiments_data.csv">📥 Download complete experiment data (CSV)</a></li>
-        </ul>
-        
-        <h2>Repository</h2>
-        <p>View the complete analysis and source code on <a href="https://github.com/CamilaDuitama/BEAST-BEAGLE-Performance-Analysis">GitHub</a></p>
+        <div class="comparison-note">
+            <h3>📊 Data Downloads</h3>
+            <ul>
+                <li><a href="kernel_comparison_summary.csv">Kernel comparison summary (CSV)</a></li>
+                <li><a href="experiment_summary.csv">All experiments data (CSV)</a></li>
+            </ul>
+        </div>
     </div>
 </body>
 </html>
