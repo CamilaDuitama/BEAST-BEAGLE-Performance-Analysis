@@ -96,25 +96,6 @@ for partition_count in partition_counts:
                 )
             )
     
-    # Add annotations for special configurations
-    # Highlight 8-core beagle_SSE configuration
-    optimal_8core = partition_data[(partition_data['cores'] == 8) & 
-                                  (partition_data['kernel'] == 'beagle_SSE')]
-    if not optimal_8core.empty:
-        for _, row in optimal_8core.iterrows():
-            fig.add_annotation(
-                x=row['unique_sites_avg'],
-                y=row['run_time_min'],
-                text="8-core optimal",
-                showarrow=True,
-                arrowhead=2,
-                arrowsize=1,
-                arrowwidth=2,
-                arrowcolor='red',
-                ax=40,
-                ay=-40,
-                font=dict(size=10, color='red')  # Removed 'weight' property
-            )
     
     # Add legend explanation
     fig.add_annotation(
