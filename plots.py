@@ -53,36 +53,41 @@ for partition_count in partition_counts:
     fig = go.Figure()
 
     if partition_count == 1:
-        # One marker per unique (beast_threads, beagle_threads, dataset)
-        for _, row in partition_data.iterrows():
-            combo = (row['beast_threads'], row['beagle_threads'])
-            symbol = combo_to_symbol[combo]
-            color = colors.get(row['dataset'], 'gray')
-            hover_text = (
-                f"Dataset: {row['dataset']}<br>Kernel: {row['kernel']}<br>"
-                f"BEAST threads: {row['beast_threads']}<br>BEAGLE threads: {row['beagle_threads']}"
-            )
+        # Each trace is a (beast_threads, beagle_threads) combo, as in other partitions
+        for combo, symbol in combo_to_symbol.items():
+            combo_data = partition_data[
+                (partition_data['beast_threads'] == combo[0]) &
+                (partition_data['beagle_threads'] == combo[1])
+            ]
+            if combo_data.empty:
+                continue
+
+            marker_colors = combo_data['dataset'].map(colors).fillna('gray')
+            hover_text = [
+                f"Dataset: {row['dataset']}<br>Kernel: {row['kernel']}<br>BEAST threads: {row['beast_threads']}<br>BEAGLE threads: {row['beagle_threads']}"
+                for _, row in combo_data.iterrows()
+            ]
+
             fig.add_trace(
                 go.Scatter(
-                    x=[row['unique_sites_avg']],
-                    y=[row['run_time_min']],
+                    x=combo_data['unique_sites_avg'],
+                    y=combo_data['run_time_min'],
                     mode='markers',
-                    name=f"{row['dataset']} {combo[0]}B/{combo[1]}T",
+                    name=f"{combo[0]}B/{combo[1]}T",
                     marker=dict(
                         size=16,
-                        color=color,
+                        color=marker_colors,
                         symbol=symbol,
                         line=dict(width=2, color='black'),
                         opacity=0.8
                     ),
-                    text=[hover_text],
-                    customdata=[[row['dataset'], row['kernel'], row['speedup'], row['cost_cpu_min']]],
+                    text=hover_text,
+                    customdata=combo_data[['dataset', 'kernel', 'speedup', 'cost_cpu_min']].values,
                     hovertemplate='%{text}<br>' +
                                   'Avg unique sites/partition: %{x:.0f}<br>' +
                                   'Run time: %{y:.2f} min<br>' +
                                   'Speedup: %{customdata[2]:.2f}x<br>' +
                                   'Cost: %{customdata[3]:.1f} cpu-min<extra></extra>',
-                    showlegend=True
                 )
             )
     else:
