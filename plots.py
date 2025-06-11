@@ -53,36 +53,41 @@ for partition_count in partition_counts:
     fig = go.Figure()
 
     if partition_count == 1:
-        # Each trace is a (beast_threads, beagle_threads) combo, as in other partitions
-        for combo, symbol in combo_to_symbol.items():
+        # One marker per trace: each trace is a unique (dataset, beast_threads, beagle_threads) combo
+        unique_combos = partition_data[['dataset', 'beast_threads', 'beagle_threads']].drop_duplicates()
+        for _, combo_row in unique_combos.iterrows():
+            dataset = combo_row['dataset']
+            beast_threads = combo_row['beast_threads']
+            beagle_threads = combo_row['beagle_threads']
+            symbol = combo_to_symbol[(beast_threads, beagle_threads)]
+            color = colors.get(dataset, 'gray')
             combo_data = partition_data[
-                (partition_data['beast_threads'] == combo[0]) &
-                (partition_data['beagle_threads'] == combo[1])
+                (partition_data['dataset'] == dataset) &
+                (partition_data['beast_threads'] == beast_threads) &
+                (partition_data['beagle_threads'] == beagle_threads)
             ]
             if combo_data.empty:
                 continue
-
-            marker_colors = combo_data['dataset'].map(colors).fillna('gray')
-            hover_text = [
-                f"Dataset: {row['dataset']}<br>Kernel: {row['kernel']}<br>BEAST threads: {row['beast_threads']}<br>BEAGLE threads: {row['beagle_threads']}"
-                for _, row in combo_data.iterrows()
-            ]
-
+            row = combo_data.iloc[0]
+            hover_text = (
+                f"Dataset: {row['dataset']}<br>Kernel: {row['kernel']}<br>"
+                f"BEAST threads: {row['beast_threads']}<br>BEAGLE threads: {row['beagle_threads']}"
+            )
             fig.add_trace(
                 go.Scatter(
-                    x=combo_data['unique_sites_avg'],
-                    y=combo_data['run_time_min'],
+                    x=[row['unique_sites_avg']],
+                    y=[row['run_time_min']],
                     mode='markers',
-                    name=f"{combo[0]}B/{combo[1]}T",
+                    name=f"{dataset} {beast_threads}B/{beagle_threads}T",
                     marker=dict(
                         size=16,
-                        color=marker_colors,
+                        color=color,
                         symbol=symbol,
                         line=dict(width=2, color='black'),
                         opacity=0.8
                     ),
-                    text=hover_text,
-                    customdata=combo_data[['dataset', 'kernel', 'speedup', 'cost_cpu_min']].values,
+                    text=[hover_text],
+                    customdata=[[row['dataset'], row['kernel'], row['speedup'], row['cost_cpu_min']]],
                     hovertemplate='%{text}<br>' +
                                   'Avg unique sites/partition: %{x:.0f}<br>' +
                                   'Run time: %{y:.2f} min<br>' +
@@ -129,37 +134,11 @@ for partition_count in partition_counts:
                 )
             )
 
-    # Build a legend for marker shapes (right-hand side, not over plot)
-    legend_html = "<b>Marker shape = BEAST/BEAGLE threads</b><br>"
-    symbol_unicode = {
-        'circle': '●', 'square': '■', 'diamond': '◆', 'cross': '✚', 'x': '✖',
-        'triangle-up': '▲', 'triangle-down': '▼', 'triangle-left': '◀', 'triangle-right': '▶',
-        'star': '★', 'hexagram': '✡', 'bowtie': '⧓'
-    }
-    for symbol in symbol_list:
-        combos = symbol_to_combo.get(symbol, [])
-        for combo in combos:
-            beast, beagle = combo
-            symbol_disp = symbol_unicode.get(symbol, symbol)
-            legend_html += f"{symbol_disp} = {beast}B/{beagle}T<br>"
-
-    # Add a right-hand annotation for the marker shape legend
-    fig.add_annotation(
-        xref="paper", yref="paper",
-        x=1.13, y=1,
-        text=legend_html + "<br>Color = dataset",
-        showarrow=False,
-        font=dict(size=12),
-        bgcolor="rgba(255,255,255,0.95)",
-        bordercolor="black",
-        borderwidth=1,
-        xanchor='left',
-        yanchor='top'
-    )
+    # Remove the right-hand annotation legend for marker shapes (legend_html and fig.add_annotation)
 
     fig.update_layout(
         title={
-            'text': f'BEAST Performance: {partition_count} Partition{"s" if partition_count > 1 else ""}<br><sup>One trace per BEAST/BEAGLE thread combo, all datasets</sup>',
+            'text': f'BEAST Performance: {partition_count} Partition{"s" if partition_count > 1 else ""}',
             'x': 0.5,
             'xanchor': 'center',
             'font': {'size': 18}
